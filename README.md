@@ -39,10 +39,12 @@ embeds each chunk and stores it in `guidebook_chunks` with a `vector(1536)` colu
 
 At request time, `src/lib/agent.ts` runs this graph:
 
-```
-START → contextualize → retrieve →┬→ generate → END
-                                  └→ fallback → END
-```
+<p align="center">
+  <img src="docs/agent-graph.png" alt="AskMyStay LangGraph agent: start to contextualize to retrieve, then conditionally to either generate or fallback, both ending at end" width="260">
+</p>
+
+Generated from the compiled graph itself with `npm run graph`, so it cannot drift from the code.
+Dotted edges are the conditional branch. Re-run it after changing any node or edge.
 
 - **contextualize** — rewrites a follow-up into a standalone search query using the conversation
   so far, so *"and what time is that again?"* still retrieves the right section. Skipped (no LLM
@@ -158,6 +160,7 @@ DATABASE_URL=postgresql://askmystay:askmystay@localhost:5433/askmystay
 | `npm start` | Run the built server — `node build` |
 | `npm run seed` | Chunk, embed and load the guidebook |
 | `npm run calibrate` | Re-measure the similarity threshold against the seeded chunks |
+| `npm run graph` | Re-render `docs/agent-graph.png` from the compiled graph |
 | `npm run check` | `svelte-kit sync` + `svelte-check` |
 
 ## Project layout
@@ -175,4 +178,5 @@ src/routes/api/chat/+server.ts POST endpoint
 src/routes/+page.svelte        chat UI
 scripts/seed.ts                one-time (idempotent) seed
 scripts/calibrate.ts           re-measure the similarity threshold
+scripts/graph.mjs              render the agent graph to docs/
 ```

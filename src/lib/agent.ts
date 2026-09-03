@@ -167,14 +167,17 @@ const fallback: GraphNode<typeof AgentState> = (state) => ({
 	messages: [new HumanMessage(state.question), new AIMessage(FALLBACK_ANSWER)]
 });
 
-const builder = new StateGraph(AgentState)
+export const builder = new StateGraph(AgentState)
 	.addNode('contextualize', contextualize)
 	.addNode('retrieve', retrieve)
 	.addNode('generate', generate)
 	.addNode('fallback', fallback)
 	.addEdge(START, 'contextualize')
 	.addEdge('contextualize', 'retrieve')
-	.addConditionalEdges('retrieve', routeAfterRetrieve)
+	// The pathMap declares the only destinations this router can return. Without
+	// it LangGraph assumes every node is reachable and the rendered graph shows
+	// phantom edges (retrieve -> contextualize, retrieve -> END).
+	.addConditionalEdges('retrieve', routeAfterRetrieve, ['generate', 'fallback'])
 	.addEdge('generate', END)
 	.addEdge('fallback', END);
 

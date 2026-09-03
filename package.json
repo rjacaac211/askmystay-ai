@@ -10,7 +10,8 @@
     "start": "node build",
     "seed": "tsx scripts/seed.ts",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "calibrate": "tsx scripts/calibrate.ts"
+    "calibrate": "tsx scripts/calibrate.ts",
+    "graph": "tsx scripts/graph.mjs"
   },
   "dependencies": {
     "@langchain/core": "1.2.9",
