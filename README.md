@@ -40,23 +40,92 @@ embeds each chunk and stores it in `guidebook_chunks` with a `vector(1536)` colu
 At request time, `src/lib/agent.ts` runs this graph:
 
 <p align="center">
-  <img src="docs/agent-graph.png" alt="AskMyStay LangGraph agent: start to contextualize to retrieve, then conditionally to either generate or fallback, both ending at end" width="260">
+  <img src="docs/agent-graph.png" alt="AskMyStay LangGraph agent: __start__ flows into contextualize, then retrieve, which branches on a dotted conditional edge to either fallback or generate, both ending at __end__" width="300">
 </p>
 
-Generated from the compiled graph itself with `npm run graph`, so it cannot drift from the code.
-Dotted edges are the conditional branch. Re-run it after changing any node or edge.
+The image is generated from the compiled graph itself by `npm run graph`, so it cannot drift from
+the code. Solid arrows are unconditional edges; the dotted pair out of `retrieve` is the
+conditional branch, and only one of them is taken per turn.
 
-- **contextualize** — rewrites a follow-up into a standalone search query using the conversation
-  so far, so *"and what time is that again?"* still retrieves the right section. Skipped (no LLM
-  call) on the first turn.
-- **retrieve** — embeds the query and runs a pgvector cosine search scoped to `property_id`,
-  returning the top 3 chunks.
-- **conditional edge** — if nothing clears a cosine similarity of `0.15`, route to **fallback**.
-  This is an *off-topic floor*, not a relevance judgement — see below.
-- **generate** — builds a system prompt instructing the model to answer *only* from the retrieved
-  excerpts, then calls `gpt-4o-mini`. If the excerpts don't contain the answer, the model is
-  instructed to reply with the refusal sentence **verbatim**.
-- **fallback** — returns that same sentence with no LLM call at all.
+### Graph state
+
+Every node receives the same state object and returns a partial update to it. LangGraph merges
+each update and — because the graph is compiled with a checkpointer — persists the result under
+the conversation's `thread_id`.
+
+| Field | Type | Written by | Purpose |
+| --- | --- | --- | --- |
+| `messages` | `MessagesValue` | `generate`, `fallback` | The full transcript. Appended to, never truncated in storage. |
+| `propertyId` | `string` | caller | Scopes retrieval so one deployment can serve many properties. |
+| `question` | `string` | caller | The guest's raw wording for this turn. |
+| `searchQuery` | `string` | `contextualize` | The standalone, pronoun-resolved query actually embedded. |
+| `chunks` | `string[]` | `retrieve` | Up to 3 guidebook excerpts. |
+| `topSimilarity` | `number` | `retrieve` | Cosine similarity of the best match, used by the router. |
+
+`messages` uses `MessagesValue`, which appends rather than overwrites — that is what accumulates
+history across turns. The other fields are plain values and are replaced each turn.
+
+### Nodes
+
+**`contextualize`** — resolves follow-ups.
+
+Reads `messages` + `question`, writes `searchQuery`. A guest who asks *"and what about my cat?"*
+produces a query that embeds terribly on its own and would match nothing. This node folds the
+recent transcript and the new question into one self-contained query (*"Can I bring my cat?"*)
+before anything is embedded.
+
+On the first turn there is no history to resolve against, so it returns the question unchanged
+and spends nothing. On later turns it costs one small `gpt-4o-mini` call.
+
+**`retrieve`** — finds candidate excerpts.
+
+Reads `searchQuery` and `propertyId`, writes `chunks` + `topSimilarity`. Embeds the query with
+`text-embedding-3-small`, then runs a pgvector cosine search scoped to that property, taking the
+top 3 by distance. Always costs one embedding call and one database query.
+
+Note `<=>` is cosine *distance*, so similarity is `1 - distance` — see `src/lib/server/retrieval.ts`.
+
+**`routeAfterRetrieve`** — the conditional edge (a function, not a node).
+
+Reads `chunks` + `topSimilarity` and returns the name of the next node. If nothing was retrieved,
+or the best match is below `SIMILARITY_THRESHOLD` (0.15), it routes to `fallback`; otherwise to
+`generate`. Its possible destinations are declared with a `pathMap` so LangGraph knows the branch
+is exactly two-way.
+
+This is an **off-topic floor, not a relevance judgement** — the reasoning is in the next section.
+
+**`generate`** — answers from the excerpts.
+
+Reads `chunks`, `messages` and `question`, appends the guest message and the model's reply to
+`messages`. Builds a system prompt carrying the excerpts and instructing the model to use nothing
+else, then sends system + the last 10 messages + the new question to `gpt-4o-mini`.
+
+Crucially, the model is also told that excerpts are retrieved by *topic* and may not actually
+contain the answer — and that when they don't, it must reply with the refusal sentence **verbatim**.
+So this node can still refuse. Costs one chat call.
+
+**`fallback`** — refuses without asking the model.
+
+Reads `question`, appends it plus the fixed `FALLBACK_ANSWER` to `messages`. No LLM call at all:
+when retrieval finds nothing on-topic, the model never sees the question and therefore cannot
+invent an answer. It still writes both messages so the persisted transcript stays a coherent
+alternating history for the next turn.
+
+Both `generate` and `fallback` lead to `__end__`, and `askQuestion` returns the last message.
+
+### What a turn costs
+
+Because refusal can come from either branch, cost varies. Measured against the running container:
+
+| Turn | contextualize | embed | generate | latency |
+| --- | --- | --- | --- | --- |
+| First turn, off-topic | — | ✓ | — | ~0.44s |
+| First turn, answered or model-refused | — | ✓ | ✓ | ~1.2s |
+| Later turn, off-topic | ✓ | ✓ | — | ~0.87s |
+| Later turn, answered or model-refused | ✓ | ✓ | ✓ | ~1.7s |
+
+Both refusal paths emit the identical sentence, so a refusal is detectable from the response but
+which path produced it is not.
 
 ### Why the threshold is 0.15, not 0.3
 
