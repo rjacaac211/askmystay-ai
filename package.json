@@ -1,0 +1,35 @@
+{
+  "name": "askmystay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node build",
+    "seed": "tsx scripts/seed.ts",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "calibrate": "tsx scripts/calibrate.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "1.2.9",
+    "@langchain/langgraph": "1.4.13",
+    "@langchain/langgraph-checkpoint-postgres": "1.0.5",
+    "@langchain/openai": "1.5.11",
+    "postgres": "3.4.9",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "5.5.7",
+    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/vite-plugin-svelte": "7.3.0",
+    "@types/node": "24.13.3",
+    "dotenv": "17.4.2",
+    "svelte": "5.57.0",
+    "svelte-check": "4.7.6",
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "vite": "8.2.2"
+  }
+}

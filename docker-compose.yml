@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: askmystay
+      POSTGRES_PASSWORD: askmystay
+      POSTGRES_DB: askmystay
+    ports:
+      # Host port is overridable: a native Postgres install (or another project)
+      # often already owns 5432, and it will silently shadow this mapping.
+      # The app service below is unaffected — inside the network it uses 5432.
+      - '${POSTGRES_HOST_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U askmystay -d askmystay']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Inside the compose network Postgres is reachable by service name.
+      DATABASE_URL: postgresql://askmystay:askmystay@postgres:5432/askmystay
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in your .env}
+      # adapter-node cannot infer the public URL from the request alone.
+      ORIGIN: ${ORIGIN:-http://localhost:3000}
+      PORT: 3000
+    ports:
+      - '3000:3000'
+
+volumes:
+  pgdata:
