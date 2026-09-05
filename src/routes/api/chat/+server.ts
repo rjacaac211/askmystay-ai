@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { askQuestion } from '$lib/agent';
 
 const MAX_QUESTION_LENGTH = 1000;
+const MAX_BOOKING_REF_LENGTH = 64;
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -16,7 +17,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		error(400, 'Request body must be a JSON object.');
 	}
 
-	const { propertyId, question, threadId } = body as Record<string, unknown>;
+	const { propertyId, question, threadId, bookingRef } = body as Record<string, unknown>;
 
 	if (typeof propertyId !== 'string' || propertyId.trim() === '') {
 		error(400, 'propertyId is required.');
@@ -30,6 +31,14 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (threadId !== undefined && typeof threadId !== 'string') {
 		error(400, 'threadId must be a string when provided.');
 	}
+	// Optional: binds the conversation to a stay. Absent means the guest is
+	// browsing the guidebook without a reservation attached.
+	if (bookingRef !== undefined && typeof bookingRef !== 'string') {
+		error(400, 'bookingRef must be a string when provided.');
+	}
+	if (typeof bookingRef === 'string' && bookingRef.length > MAX_BOOKING_REF_LENGTH) {
+		error(400, `bookingRef must be ${MAX_BOOKING_REF_LENGTH} characters or fewer.`);
+	}
 
 	// A thread is one guest conversation. The client persists it so follow-ups
 	// land on the same history; a missing one starts a fresh conversation.
@@ -39,7 +48,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		const result = await askQuestion({
 			propertyId: propertyId.trim(),
 			threadId: thread,
-			question: question.trim()
+			question: question.trim(),
+			bookingRef: typeof bookingRef === 'string' ? bookingRef.trim() : undefined
 		});
 		return json({ answer: result.answer, threadId: result.threadId });
 	} catch (err) {

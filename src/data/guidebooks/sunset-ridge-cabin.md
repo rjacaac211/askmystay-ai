@@ -1,4 +1,4 @@
-# Sunset Ridge Cabin — Guest Guidebook
+# Sunset Ridge Cabin
 
 Welcome to Sunset Ridge Cabin, a two-bedroom A-frame on four wooded acres just
 outside Leavenworth, Washington. Everything you need to know about the place is
@@ -20,6 +20,8 @@ turn the thermostat down to 60, and make sure the sliding door to the deck is
 locked. You do not need to strip the beds or wash the linens.
 
 ## Wifi and Devices
+
+<!-- guest-only -->
 
 The wifi network is **SunsetRidge-Guest** and the password is **cedarcreek2019**
 (all lowercase, no spaces). The same network reaches the loft and the deck, but it

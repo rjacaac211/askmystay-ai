@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "guidebook_sections",
+  "info": {
+    "singularName": "guidebook-section",
+    "pluralName": "guidebook-sections",
+    "displayName": "Guidebook Section",
+    "description": "One retrievable chunk. Each section becomes exactly one embedding, keyed by its documentId."
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "required": true
+    },
+    "body": {
+      "type": "text",
+      "required": true
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    },
+    "guestOnly": {
+      "type": "boolean",
+      "default": false
+    },
+    "property": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::property.property",
+      "inversedBy": "sections"
+    }
+  }
+}

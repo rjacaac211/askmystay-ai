@@ -12,12 +12,51 @@ services:
       - '${POSTGRES_HOST_PORT:-5432}:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Creates the separate `strapi` database. Only runs on an empty volume.
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U askmystay -d askmystay']
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  strapi:
+    build: ./strapi
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      HOST: 0.0.0.0
+      PORT: 1337
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: strapi
+      DATABASE_USERNAME: askmystay
+      DATABASE_PASSWORD: askmystay
+      DATABASE_SSL: 'false'
+      # DEV DEFAULTS so `docker compose up` works from a clean checkout. They
+      # protect a local demo CMS and nothing else — regenerate before exposing
+      # this anywhere real (see .env.example for the openssl one-liner).
+      APP_KEYS: ${STRAPI_APP_KEYS:-devKeyA==,devKeyB==,devKeyC==,devKeyD==}
+      API_TOKEN_SALT: ${STRAPI_API_TOKEN_SALT:-devApiTokenSalt==}
+      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET:-devAdminJwtSecret==}
+      TRANSFER_TOKEN_SALT: ${STRAPI_TRANSFER_TOKEN_SALT:-devTransferTokenSalt==}
+      JWT_SECRET: ${STRAPI_JWT_SECRET:-devJwtSecret==}
+      ENCRYPTION_KEY: ${STRAPI_ENCRYPTION_KEY:-devEncryptionKey==}
+      # The reindex webhook reads entry.property.slug to know which property to
+      # re-embed; without this Strapi strips relations from the payload.
+      WEBHOOKS_POPULATE_RELATIONS: 'true'
+      # Bootstrap seeds one property per guidebook file on an empty CMS.
+      GUIDEBOOK_DIR: /seed/guidebooks
+      # Inside the compose network the app is reachable by service name.
+      REINDEX_WEBHOOK_URL: http://app:3000/api/reindex
+      REINDEX_SECRET: ${REINDEX_SECRET:-dev-reindex-secret-change-me}
+    volumes:
+      - ./src/data:/seed:ro
+    ports:
+      - '1337:1337'
 
   app:
     build: .
@@ -27,7 +66,18 @@ services:
     environment:
       # Inside the compose network Postgres is reachable by service name.
       DATABASE_URL: postgresql://askmystay:askmystay@postgres:5432/askmystay
+      # OPENAI_API_KEY is required on both providers: embeddings have no
+      # Anthropic equivalent, so retrieval always runs on OpenAI.
       OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in your .env}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANSWER_MODEL: ${ANSWER_MODEL:-}
+      UTILITY_MODEL: ${UTILITY_MODEL:-}
+      STRAPI_URL: http://strapi:1337
+      STRAPI_API_TOKEN: ${STRAPI_API_TOKEN:-}
+      REINDEX_SECRET: ${REINDEX_SECRET:-dev-reindex-secret-change-me}
+      SEED_PROPERTY_ID: ${SEED_PROPERTY_ID:-sunset-ridge-cabin}
+      EMBED_ORIGINS: ${EMBED_ORIGINS:-}
       # adapter-node cannot infer the public URL from the request alone.
       ORIGIN: ${ORIGIN:-http://localhost:3000}
       PORT: 3000
