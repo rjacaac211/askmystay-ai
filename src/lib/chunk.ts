@@ -7,7 +7,18 @@
 export interface GuidebookChunk {
 	heading: string;
 	content: string;
+	/**
+	 * Withheld from anyone without a confirmed booking.
+	 *
+	 * Marked in the source with `<!-- guest-only -->` anywhere in the section.
+	 * For access credentials — wifi passwords, door and alarm codes — which a
+	 * browsing stranger has no business reading off a public listing page.
+	 */
+	guestOnly: boolean;
 }
+
+/** Section-level marker; stripped from the text before embedding. */
+const GUEST_ONLY_MARKER = /<!--\s*guest-only\s*-->/gi;
 
 /**
  * Split a guidebook into one chunk per `## ` section.
@@ -25,10 +36,21 @@ export function chunkGuidebook(markdown: string): GuidebookChunk[] {
 
 	const flush = () => {
 		if (heading === null) return;
-		const content = `## ${heading}\n\n${body.join('\n').trim()}`.trim();
+
+		const raw = body.join('\n');
+		const guestOnly = GUEST_ONLY_MARKER.test(raw);
+		// `test` on a /g regex advances lastIndex; without this reset the next
+		// section reads the wrong answer.
+		GUEST_ONLY_MARKER.lastIndex = 0;
+
+		// Stripped before embedding: the marker is metadata for us, and leaving it
+		// in would put an HTML comment into the model's context.
+		const cleaned = raw.replace(GUEST_ONLY_MARKER, '').trim();
+		const content = `## ${heading}\n\n${cleaned}`.trim();
+
 		// Skip headings with no body underneath them.
 		if (content !== `## ${heading}`) {
-			chunks.push({ heading, content });
+			chunks.push({ heading, content, guestOnly });
 		}
 	};
 

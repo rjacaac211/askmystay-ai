@@ -1,0 +1,31 @@
+{
+	"name": "Sunset Ridge Cabin",
+	"tagline": "Two-bedroom A-frame on four wooded acres",
+	"location": "Leavenworth, Washington",
+	"nightlyRate": 245,
+	"currency": "USD",
+	"guests": 4,
+	"bedrooms": 2,
+	"beds": 3,
+	"baths": 1.5,
+	"description": "A timber A-frame set back from the road on four wooded acres, twenty minutes from Leavenworth. Two bedrooms up under the eaves, a wood-burning stove downstairs, and a deck that catches the last of the light over the ridge. Quiet enough that the loudest thing most evenings is the creek.",
+	"highlights": [
+		"Wood-burning stove and a stocked log store",
+		"Deck with ridge views and a fire pit",
+		"Dogs welcome, up to two",
+		"Four private acres, no neighbours in sight"
+	],
+	"amenities": [
+		"Wifi throughout, weaker past the fire pit",
+		"Free off-street parking for two cars",
+		"Full kitchen with dishwasher",
+		"Wood-burning stove and electric baseboard heat",
+		"Smart TV, bring your own streaming logins"
+	],
+	"houseRules": [
+		"Check-in after 4:00 PM, check-out 11:00 AM",
+		"Dogs welcome (up to two); no cats",
+		"No smoking anywhere on the property",
+		"Quiet hours 10:00 PM to 8:00 AM"
+	]
+}

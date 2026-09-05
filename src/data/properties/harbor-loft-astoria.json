@@ -1,0 +1,32 @@
+{
+	"name": "Harbor Loft Astoria",
+	"tagline": "Top-floor loft in a converted cannery on the waterfront",
+	"location": "Astoria, Oregon",
+	"nightlyRate": 190,
+	"currency": "USD",
+	"guests": 2,
+	"bedrooms": 1,
+	"beds": 1,
+	"baths": 1,
+	"description": "The top floor of an old cannery building on the Astoria waterfront, converted but not sanded smooth: thick timber, tall windows, and the Riverwalk directly outside the door. One bedroom, a window seat worth the climb, and the working river close enough to hear.",
+	"highlights": [
+		"Riverwalk directly outside the building",
+		"Window seat over the Columbia",
+		"Assigned parking in the garage below",
+		"Ten minutes' walk to the Maritime Museum"
+	],
+	"amenities": [
+		"Wifi throughout, patchy signal in the thick walls",
+		"One assigned garage space",
+		"Kitchen with induction hob and dishwasher, no oven",
+		"Mini-split heating and cooling",
+		"Smart TV, bring your own streaming logins"
+	],
+	"houseRules": [
+		"Check-in after 3:00 PM, check-out 10:00 AM",
+		"No pets — building rules, no exceptions",
+		"No smoking or vaping anywhere, including the balcony",
+		"Quiet hours 10:00 PM to 7:00 AM",
+		"Maximum two guests, no additional overnight visitors"
+	]
+}
