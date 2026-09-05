@@ -1,17 +1,22 @@
 %%{init: {'flowchart': {'curve': 'linear'}}}%%
 graph TD;
 	__start__([<p>__start__</p>]):::first
+	loadBooking(loadBooking)
 	contextualize(contextualize)
 	retrieve(retrieve)
 	generate(generate)
+	tools(tools)
 	fallback(fallback)
 	__end__([<p>__end__</p>]):::last
-	__start__ --> contextualize;
+	__start__ --> loadBooking;
 	contextualize --> retrieve;
 	fallback --> __end__;
-	generate --> __end__;
+	loadBooking --> contextualize;
+	tools --> generate;
 	retrieve -.-> generate;
 	retrieve -.-> fallback;
+	generate -.-> tools;
+	generate -.-> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2;
 	classDef first fill-opacity:0;
 	classDef last fill:#bfb6fc;
