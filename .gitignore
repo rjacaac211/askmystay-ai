@@ -8,3 +8,7 @@ node_modules/
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .DS_Store
+
+# Playwright MCP scratch output from browser-driven verification.
+.playwright-mcp/
+.demo-frames/
