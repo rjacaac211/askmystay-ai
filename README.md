@@ -66,20 +66,61 @@ You need Node 20+, Docker, an Anthropic API key and an OpenAI API key.
 
 ```bash
 cp .env.example .env      # then fill in ANTHROPIC_API_KEY and OPENAI_API_KEY
-npm install
+```
+
+Both keys are required regardless of `LLM_PROVIDER`: Anthropic publishes no embeddings endpoint, so
+retrieval always runs on OpenAI.
+
+Then pick one of two paths.
+
+### Everything in Docker
+
+The whole stack — Postgres, Strapi and the app:
+
+```bash
+docker compose up --build
+npm install               # seeding runs from the host, so it needs the dev deps
+npm run seed
+```
+
+The app is on **http://localhost:3000**, Strapi on http://localhost:1337. Strapi bootstraps itself on
+an empty database: public read-only access, one property per guidebook file, and the reindex webhook
+registered, so there is nothing to click.
+
+Seeding runs from the host rather than inside the container, because the runtime image deliberately
+has no `tsx` — see [Configuration notes](#configuration-notes). It talks to the published Postgres
+port, so it works while the stack is up.
+
+### Local development
+
+Postgres in Docker, the app on your machine with hot reload:
+
+```bash
 docker compose up -d postgres
+npm install
 npm run seed
 npm run dev
 ```
 
-Open http://localhost:5173, pick a property, and use the bubble in the corner.
+The app is on **http://localhost:5173**. Strapi is not needed — the guidebooks are read from
+`src/data/guidebooks/`, and the CMS is an alternative source rather than a requirement.
+
+### Either way
+
+Open the app, pick a property, and use the bubble in the corner.
 
 To answer questions about a stay, attach one — reference **`BK-4471`** with surname **`Moreau`**, or
 **`HL-8802`** / **`Brink`** at Harbor Loft. A guest arriving on a host's link skips that step:
 `/p/sunset-ridge-cabin?booking=BK-4471`.
 
-Both API keys are required regardless of `LLM_PROVIDER`: Anthropic publishes no embeddings endpoint,
-so retrieval always runs on OpenAI.
+If a native Postgres already owns 5432 it silently shadows the container mapping (symptom:
+`password authentication failed`). Publish the container elsewhere and point `DATABASE_URL` at the
+same port:
+
+```bash
+POSTGRES_HOST_PORT=5433
+DATABASE_URL=postgresql://askmystay:askmystay@localhost:5433/askmystay
+```
 
 ## How it works
 
@@ -334,30 +375,6 @@ where an exact scan is faster and an ivfflat index built on so few rows measurab
 | `npm run graph` | Re-render `docs/agent-graph.{mmd,png}` from the compiled graph |
 | `npm run demo` | Re-record the README GIFs from the running app (needs `npm run dev` and ffmpeg) |
 | `npm run check` | `svelte-kit sync` + `svelte-check` |
-
-## Running the whole stack in Docker
-
-```bash
-docker compose up --build
-```
-
-Postgres, Strapi and the app. Strapi bootstraps itself on an empty database: it grants the public
-role read-only access, seeds one property per guidebook file, and registers the reindex webhook, so
-there is nothing to click. The app is on http://localhost:3000, Strapi on http://localhost:1337.
-
-Seed from the host — the runtime image has no `tsx`:
-
-```bash
-npm run seed
-```
-
-If a native Postgres already owns 5432 it silently shadows the container mapping (symptom:
-`password authentication failed`). Publish elsewhere and point `DATABASE_URL` at the same port:
-
-```bash
-POSTGRES_HOST_PORT=5433
-DATABASE_URL=postgresql://askmystay:askmystay@localhost:5433/askmystay
-```
 
 ## Known limitations
 
